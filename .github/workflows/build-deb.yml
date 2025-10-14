@@ -1,0 +1,64 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        debian_version: [bullseye, bookworm]
+    
+    steps:
+    - name: Checkout packaging repository
+      uses: actions/checkout@v4
+      with:
+        path: packaging
+    
+    - name: Clone ustreamer repository
+      run: |
+        git clone --depth 1 --branch v6.40 https://github.com/pikvm/ustreamer.git ustreamer
+    
+    - name: Copy debian folder to ustreamer
+      run: |
+        cp -r packaging/debian ustreamer/
+    
+    - name: Build Debian package in Docker
+      run: |
+        cd ustreamer
+        docker run --rm \
+          -v $(pwd):/build \
+          -w /build \
+          debian:${{ matrix.debian_version }} \
+          bash -c "
+            apt-get update && \
+            apt-get install -y \
+              debhelper \
+              libevent-dev \
+              libjpeg62-turbo-dev \
+              libbsd-dev \
+              libgpiod-dev \
+              libsystemd-dev \
+              pkg-config \
+              gcc \
+              make \
+              dpkg-dev \
+              fakeroot && \
+            dpkg-buildpackage -us -uc -b
+          "
+    
+    - name: List generated packages
+      run: |
+        ls -lh *.deb || true
+    
+    - name: Upload Debian package
+      uses: actions/upload-artifact@v4
+      with:
+        name: ustreamer-debian-${{ matrix.debian_version }}
+        path: "*.deb"
+        if-no-files-found: error
