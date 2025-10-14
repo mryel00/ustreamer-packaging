@@ -13,32 +13,43 @@ This repository contains Debian packaging configuration for [pikvm/ustreamer](ht
 ### Using GitHub Actions
 
 The workflow automatically builds packages for:
-- Debian Bullseye (11)
-- Debian Bookworm (12)
+- **Debian versions**: Bullseye (11), Bookworm (12), Trixie (13)
+- **Architectures**: amd64, armhf, arm64
 
-Packages are built on:
-- Push to `main` branch
-- Pull requests to `main` branch
-- Manual workflow dispatch
+The workflow:
+- Automatically detects and uses the latest ustreamer release tag
+- Builds on push to `main` branch, pull requests to `main` branch, or manual workflow dispatch
+- Uses QEMU for cross-compilation of ARM architectures
+- Uploads built packages as artifacts in GitHub Actions runs
 
-The built packages are available as artifacts in the GitHub Actions runs.
+The built packages are available as artifacts named `ustreamer-{debian_version}-{arch}`.
 
 ### Building Locally
 
-To build the package locally:
+To build the package locally for amd64:
 
 ```bash
 # Clone this repository
 git clone https://github.com/mryel00/ustreamer-packaging.git
 
+# Get the latest ustreamer tag
+LATEST_TAG=$(git ls-remote --tags --sort=v:refname https://github.com/pikvm/ustreamer.git | grep -v '\^{}' | tail -1 | sed 's/.*refs\/tags\///')
+
 # Clone ustreamer
-git clone --depth 1 --branch v6.40 https://github.com/pikvm/ustreamer.git
+git clone --depth 1 --branch $LATEST_TAG https://github.com/pikvm/ustreamer.git
+
+# Update version in changelog
+VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
+cd ustreamer-packaging/debian
+sed -i "s/ustreamer (.*)/ustreamer ($VERSION-1)/" changelog
+cd ../..
 
 # Copy debian folder
 cp -r ustreamer-packaging/debian ustreamer/
 
 # Build using Docker
 cd ustreamer
+mkdir -p ../output
 docker run --rm \
   -v $(pwd):/src \
   -v $(pwd)/../output:/output \
@@ -54,6 +65,8 @@ docker run --rm \
     mv ../*.deb /output/
   "
 ```
+
+For ARM architectures, you need to set up QEMU and use the `--platform` flag with Docker.
 
 The built package will be in the `output/` directory.
 
@@ -76,4 +89,5 @@ The package automatically handles dependencies:
 
 ## Version
 
-Current packaged version: **6.40**
+The workflow automatically uses the **latest release tag** from the [pikvm/ustreamer](https://github.com/pikvm/ustreamer) repository.
+
