@@ -19,7 +19,7 @@ The workflow automatically builds packages for:
 The workflow:
 - Automatically detects and uses the latest ustreamer release tag
 - Builds on push to `main` branch, pull requests to `main` branch, or manual workflow dispatch
-- Uses QEMU for cross-compilation of ARM architectures
+- Uses native ARM runners for ARM architecture builds (armhf, arm64)
 - Uploads built packages as artifacts in GitHub Actions runs
 
 The built packages are available as artifacts named `ustreamer-{debian_version}-{arch}`.
@@ -66,7 +66,7 @@ docker run --rm \
   "
 ```
 
-For ARM architectures, you need to set up QEMU and use the `--platform` flag with Docker.
+For ARM architectures on native ARM hardware, the same process applies. If building on x86 hardware, you need to set up QEMU and use the `--platform` flag with Docker.
 
 The built package will be in the `output/` directory.
 

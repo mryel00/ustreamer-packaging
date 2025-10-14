@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-deb:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm' }}
     strategy:
       matrix:
         debian_version: [bullseye, bookworm, trixie]
@@ -46,10 +46,6 @@ jobs:
     - name: Create output directory
       run: |
         mkdir -p output
-    
-    - name: Set up QEMU for cross-compilation
-      if: matrix.arch != 'amd64'
-      uses: docker/setup-qemu-action@v3
     
     - name: Build Debian package in Docker
       run: |
@@ -89,7 +85,7 @@ jobs:
               dpkg-dev \
               fakeroot \
               build-essential && \
-            dpkg-buildpackage -us -uc -b -a$DEB_ARCH && \
+            dpkg-buildpackage -us -uc -b && \
             mv ../*.deb /output/ || true && \
             mv ../*.buildinfo /output/ || true && \
             mv ../*.changes /output/ || true
