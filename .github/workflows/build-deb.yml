@@ -28,16 +28,20 @@ jobs:
       run: |
         cp -r packaging/debian ustreamer/
     
+    - name: Create output directory
+      run: |
+        mkdir -p output
+    
     - name: Build Debian package in Docker
       run: |
-        cd ustreamer
         docker run --rm \
-          -v $(pwd):/build \
-          -w /build \
+          -v $(pwd)/ustreamer:/src \
+          -v $(pwd)/output:/output \
+          -w /src \
           debian:${{ matrix.debian_version }} \
           bash -c "
             apt-get update && \
-            apt-get install -y \
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               debhelper \
               libevent-dev \
               libjpeg62-turbo-dev \
@@ -48,17 +52,21 @@ jobs:
               gcc \
               make \
               dpkg-dev \
-              fakeroot && \
-            dpkg-buildpackage -us -uc -b
+              fakeroot \
+              build-essential && \
+            dpkg-buildpackage -us -uc -b && \
+            mv ../*.deb /output/ || true && \
+            mv ../*.buildinfo /output/ || true && \
+            mv ../*.changes /output/ || true
           "
     
     - name: List generated packages
       run: |
-        ls -lh *.deb || true
+        ls -lh output/
     
     - name: Upload Debian package
       uses: actions/upload-artifact@v4
       with:
         name: ustreamer-debian-${{ matrix.debian_version }}
-        path: "*.deb"
+        path: "output/*.deb"
         if-no-files-found: error
