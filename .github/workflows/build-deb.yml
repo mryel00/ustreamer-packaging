@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-deb:
-    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     strategy:
       matrix:
         debian_version: [bullseye, bookworm, trixie]
