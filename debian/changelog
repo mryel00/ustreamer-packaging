@@ -1,4 +1,4 @@
-ustreamer (6.40-1) UNRELEASED; urgency=medium
+mainsail-ustreamer (6.40-1) UNRELEASED; urgency=medium
 
   * Initial Debian package release
   * Package version 6.40 from upstream

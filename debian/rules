@@ -14,7 +14,7 @@ override_dh_auto_build:
 	dh_auto_build -- $(BUILD_OPTIONS)
 
 override_dh_auto_install:
-	dh_auto_install -- $(BUILD_OPTIONS) PREFIX=/usr DESTDIR=$(CURDIR)/debian/ustreamer
+	dh_auto_install -- $(BUILD_OPTIONS) PREFIX=/usr DESTDIR=$(CURDIR)/debian/mainsail-ustreamer
 
 override_dh_auto_clean:
 	dh_auto_clean

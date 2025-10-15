@@ -8,6 +8,11 @@ This repository contains Debian packaging configuration for [pikvm/ustreamer](ht
 - Debian packaging files in the `debian/` directory
 - GitHub Actions workflow to automatically build Debian packages
 
+The package is named **`mainsail-ustreamer`** and can be installed with:
+```bash
+sudo apt install mainsail-ustreamer
+```
+
 ## Building Packages
 
 ### Using GitHub Actions
@@ -22,7 +27,7 @@ The workflow:
 - Uses native ARM runners for ARM architecture builds (armhf, arm64)
 - Uploads built packages as artifacts in GitHub Actions runs
 
-The built packages are available as artifacts named `ustreamer-{debian_version}-{arch}`.
+The built packages are available as artifacts named `mainsail-ustreamer-{debian_version}-{arch}`.
 
 ### Building Locally
 
@@ -41,7 +46,7 @@ git clone --depth 1 --branch $LATEST_TAG https://github.com/pikvm/ustreamer.git
 # Update version in changelog
 VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
 cd ustreamer-packaging/debian
-sed -i "s/ustreamer (.*)/ustreamer ($VERSION-1)/" changelog
+sed -i "s/mainsail-ustreamer (.*)/mainsail-ustreamer ($VERSION-1)/" changelog
 cd ../..
 
 # Copy debian folder
@@ -77,6 +82,15 @@ The package includes:
 - `ustreamer-dump` - Utility for dumping frames
 - Man pages for both utilities
 - Built with GPIO and systemd support
+
+## Package Compatibility
+
+The `mainsail-ustreamer` package is designed to be compatible with the upstream `ustreamer` package:
+- **`Conflicts: ustreamer`** - Prevents simultaneous installation
+- **`Replaces: ustreamer`** - Allows replacing the ustreamer package
+- **`Provides: ustreamer`** - Provides virtual package ustreamer
+
+This allows users to switch between packages seamlessly.
 
 ## Dependencies
 

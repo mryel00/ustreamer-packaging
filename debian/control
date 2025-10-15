@@ -1,4 +1,4 @@
-Source: ustreamer
+Source: mainsail-ustreamer
 Section: video
 Priority: optional
 Maintainer: Debian Package Maintainer <maintainer@example.com>
@@ -16,11 +16,11 @@ Homepage: https://github.com/pikvm/ustreamer
 Vcs-Browser: https://github.com/pikvm/ustreamer
 Vcs-Git: https://github.com/pikvm/ustreamer.git
 
-Package: ustreamer
+Package: mainsail-ustreamer
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: mainsail-ustreamer
-Replaces: mainsail-ustreamer
+Conflicts: ustreamer
+Replaces: ustreamer
 Provides: ustreamer
 Description: Lightweight and fast MJPEG-HTTP streamer
  µStreamer is a lightweight and very quick server to stream MJPEG video

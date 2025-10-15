@@ -36,7 +36,7 @@ jobs:
       run: |
         VERSION=$(echo "${{ steps.get_tag.outputs.tag }}" | sed 's/^v//')
         cd packaging/debian
-        sed -i "s/ustreamer (.*)/ustreamer ($VERSION-1)/" changelog
+        sed -i "s/mainsail-ustreamer (.*)/mainsail-ustreamer ($VERSION-1)/" changelog
         cat changelog
     
     - name: Copy debian folder to ustreamer
@@ -98,6 +98,6 @@ jobs:
     - name: Upload Debian package
       uses: actions/upload-artifact@v4
       with:
-        name: ustreamer-${{ matrix.debian_version }}-${{ matrix.arch }}
+        name: mainsail-ustreamer-${{ matrix.debian_version }}-${{ matrix.arch }}
         path: "output/*.deb"
         if-no-files-found: error
