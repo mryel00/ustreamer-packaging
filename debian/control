@@ -19,6 +19,9 @@ Vcs-Git: https://github.com/pikvm/ustreamer.git
 Package: ustreamer
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: mainsail-ustreamer
+Replaces: mainsail-ustreamer
+Provides: ustreamer
 Description: Lightweight and fast MJPEG-HTTP streamer
  µStreamer is a lightweight and very quick server to stream MJPEG video
  from any V4L2 device to the net. All new browsers have native support
