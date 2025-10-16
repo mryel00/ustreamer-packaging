@@ -1,17 +1,87 @@
 name: Create Release
 
 on:
-  workflow_run:
-    workflows: ["Build Debian Package"]
-    types:
-      - completed
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
+  trigger-build:
+    runs-on: ubuntu-24.04
+    outputs:
+      run-id: ${{ steps.trigger.outputs.run-id }}
+    
+    steps:
+    - name: Trigger build workflow
+      id: trigger
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const response = await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'build-deb.yml',
+            ref: context.ref
+          });
+          
+          // Wait a bit for the workflow to start
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          // Get the workflow run
+          const runs = await github.rest.actions.listWorkflowRuns({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'build-deb.yml',
+            event: 'workflow_dispatch',
+            per_page: 1
+          });
+          
+          const runId = runs.data.workflow_runs[0].id;
+          console.log(`Triggered workflow run ID: ${runId}`);
+          core.setOutput('run-id', runId);
+          
+          return runId;
+  
+  wait-for-build:
+    runs-on: ubuntu-24.04
+    needs: trigger-build
+    
+    steps:
+    - name: Wait for build workflow to complete
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const runId = ${{ needs.trigger-build.outputs.run-id }};
+          console.log(`Waiting for workflow run ${runId} to complete...`);
+          
+          let completed = false;
+          let conclusion = null;
+          
+          while (!completed) {
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId
+            });
+            
+            console.log(`Status: ${run.data.status}, Conclusion: ${run.data.conclusion}`);
+            
+            if (run.data.status === 'completed') {
+              completed = true;
+              conclusion = run.data.conclusion;
+            } else {
+              // Wait 30 seconds before checking again
+              await new Promise(resolve => setTimeout(resolve, 30000));
+            }
+          }
+          
+          if (conclusion !== 'success') {
+            core.setFailed(`Build workflow failed with conclusion: ${conclusion}`);
+          }
+          
+          console.log('Build workflow completed successfully!');
+  
   create-release:
     runs-on: ubuntu-24.04
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    needs: [trigger-build, wait-for-build]
     permissions:
       contents: write
     
@@ -31,12 +101,14 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Version: $VERSION"
     
-    - name: Download all artifacts
+    - name: Download all artifacts from build workflow
       uses: actions/download-artifact@v4
       with:
         path: artifacts
         pattern: mainsail-ustreamer-*
         merge-multiple: false
+        run-id: ${{ needs.trigger-build.outputs.run-id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Organize artifacts
       run: |
