@@ -1,0 +1,27 @@
+name: Update to Latest Version
+on:
+  schedule:
+    - cron: '7 */6 * * *'
+  workflow_dispatch:
+jobs:
+  check-latest:
+    runs-on: ubuntu-24.04
+    outputs:
+      ustreamer_tag: ${{ steps.get_version.outputs.latest_tag }}
+      packaged_tag: ${{ steps.get_version.outputs.local_tag }}
+    steps:
+      - name: Get latest Version
+        id: get_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(git ls-remote --tags --sort=v:refname https://github.com/pikvm/ustreamer.git | grep -v '\^{}' | tail -1 | sed 's/.*refs\/tags\///')
+          echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+          LOCAL_TAG=$(gh release view -R mryel00/ustreamer-packaging --json tagName -q .tagName)
+          echo "local_tag=${LOCAL_TAG}" >> $GITHUB_OUTPUT
+  update-package:
+    needs: check-latest
+    if: needs.check-latest.outputs.ustreamer_tag != needs.check-latest.outputs.packaged_tag
+    uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
