@@ -12,72 +12,72 @@ jobs:
     needs: build
     permissions:
       contents: write
-    
+
     steps:
     - name: Checkout packaging repository
-      uses: actions/checkout@v4.2.2
-    
+      uses: actions/checkout@v5
+
     - name: Get latest ustreamer tag
       id: get_tag
       run: |
         LATEST_TAG=$(git ls-remote --tags --sort=v:refname https://github.com/pikvm/ustreamer.git | grep -v '\^{}' | tail -1 | sed 's/.*refs\/tags\///')
         echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
         echo "Latest ustreamer tag: $LATEST_TAG"
-        
+
         # Extract version without 'v' prefix
         VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Version: $VERSION"
-    
+
     - name: Download all artifacts from build workflow
       uses: actions/download-artifact@v4
       with:
         path: artifacts
         pattern: mainsail-ustreamer-*
         merge-multiple: false
-    
+
     - name: Organize artifacts
       run: |
         mkdir -p release-files
         find artifacts -name "*.deb" -exec cp {} release-files/ \;
         ls -lh release-files/
-    
+
     - name: Generate release notes
       id: release_notes
       run: |
         cat > release-notes.md << 'EOF'
         # mainsail-ustreamer ${{ steps.get_tag.outputs.version }}
-        
+
         Debian packages for µStreamer ${{ steps.get_tag.outputs.tag }} (pikvm/ustreamer).
-        
+
         ## Installation
-        
+
         Download the appropriate `.deb` file for your system and install with:
         ```bash
         sudo dpkg -i mainsail-ustreamer_${{ steps.get_tag.outputs.version }}-1_<arch>.deb
         sudo apt-get install -f  # Install dependencies if needed
         ```
-        
+
         ## Packages
-        
+
         This release includes packages for:
         - **Debian Bullseye (11)**: amd64, armhf, arm64
         - **Debian Bookworm (12)**: amd64, armhf, arm64
         - **Debian Trixie (13)**: amd64, armhf, arm64
-        
+
         ## Features
-        
+
         - µStreamer MJPEG-HTTP streaming server
         - ustreamer-dump utility
         - GPIO and systemd support enabled
         - Compatible with upstream ustreamer package
-        
+
         ## Upstream
-        
+
         Based on [pikvm/ustreamer ${{ steps.get_tag.outputs.tag }}](https://github.com/pikvm/ustreamer/releases/tag/${{ steps.get_tag.outputs.tag }})
         EOF
         cat release-notes.md
-    
+
     - name: Check if release exists
       id: check_release
       run: |
@@ -90,7 +90,7 @@ jobs:
         fi
       env:
         GH_TOKEN: ${{ github.token }}
-    
+
     - name: Delete existing release if it exists
       if: steps.check_release.outputs.exists == 'true'
       run: |
@@ -98,7 +98,7 @@ jobs:
         echo "Deleted existing release ${{ steps.get_tag.outputs.tag }}"
       env:
         GH_TOKEN: ${{ github.token }}
-    
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
