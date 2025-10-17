@@ -58,20 +58,6 @@ jobs:
         sudo apt-get install -f  # Install dependencies if needed
         ```
 
-        ## Packages
-
-        This release includes packages for:
-        - **Debian Bullseye (11)**: amd64, armhf, arm64
-        - **Debian Bookworm (12)**: amd64, armhf, arm64
-        - **Debian Trixie (13)**: amd64, armhf, arm64
-
-        ## Features
-
-        - µStreamer MJPEG-HTTP streaming server
-        - ustreamer-dump utility
-        - GPIO and systemd support enabled
-        - Compatible with upstream ustreamer package
-
         ## Upstream
 
         Based on [pikvm/ustreamer ${{ steps.get_tag.outputs.tag }}](https://github.com/pikvm/ustreamer/releases/tag/${{ steps.get_tag.outputs.tag }})
