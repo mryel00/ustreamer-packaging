@@ -89,7 +89,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.get_tag.outputs.tag }}
-        name: mainsail-ustreamer ${{ steps.get_tag.outputs.version }}
+        name: ${{ steps.get_tag.outputs.tag }}
         body_path: release-notes.md
         files: release-files/*.deb
         draft: false
