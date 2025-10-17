@@ -1,0 +1,98 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-deb.yml
+  
+  create-release:
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout packaging repository
+      uses: actions/checkout@v5
+
+    - name: Get latest ustreamer tag
+      id: get_tag
+      run: |
+        LATEST_TAG=$(git ls-remote --tags --sort=v:refname https://github.com/pikvm/ustreamer.git | grep -v '\^{}' | tail -1 | sed 's/.*refs\/tags\///')
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Latest ustreamer tag: $LATEST_TAG"
+
+        # Extract version without 'v' prefix
+        VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+    - name: Download all artifacts from build workflow
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        pattern: mainsail-ustreamer-*
+        merge-multiple: false
+
+    - name: Organize artifacts
+      run: |
+        mkdir -p release-files
+        find artifacts -name "*.deb" -exec cp {} release-files/ \;
+        ls -lh release-files/
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        cat > release-notes.md << 'EOF'
+        # mainsail-ustreamer ${{ steps.get_tag.outputs.version }}
+
+        Debian packages for µStreamer ${{ steps.get_tag.outputs.tag }} (pikvm/ustreamer).
+
+        ## Installation
+
+        Download the appropriate `.deb` file for your system and install with:
+        ```bash
+        sudo dpkg -i mainsail-ustreamer_${{ steps.get_tag.outputs.version }}-1_<arch>.deb
+        sudo apt-get install -f  # Install dependencies if needed
+        ```
+
+        ## Upstream
+
+        Based on [pikvm/ustreamer ${{ steps.get_tag.outputs.tag }}](https://github.com/pikvm/ustreamer/releases/tag/${{ steps.get_tag.outputs.tag }})
+        EOF
+        cat release-notes.md
+
+    - name: Check if release exists
+      id: check_release
+      run: |
+        if gh release view "${{ steps.get_tag.outputs.tag }}" &>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release ${{ steps.get_tag.outputs.tag }} already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release ${{ steps.get_tag.outputs.tag }} does not exist"
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Delete existing release if it exists
+      if: steps.check_release.outputs.exists == 'true'
+      run: |
+        gh release delete "${{ steps.get_tag.outputs.tag }}" --yes --cleanup-tag
+        echo "Deleted existing release ${{ steps.get_tag.outputs.tag }}"
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_tag.outputs.tag }}
+        name: mainsail-ustreamer ${{ steps.get_tag.outputs.version }}
+        body_path: release-notes.md
+        files: release-files/*.deb
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

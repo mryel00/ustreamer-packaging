@@ -1,0 +1,104 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  build-deb:
+    runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
+    strategy:
+      matrix:
+        debian_version: [bullseye, bookworm, trixie]
+        arch: [amd64, armhf, arm64]
+
+    steps:
+    - name: Checkout packaging repository
+      uses: actions/checkout@v5
+      with:
+        path: packaging
+
+    - name: Get latest ustreamer tag
+      id: get_tag
+      run: |
+        LATEST_TAG=$(git ls-remote --tags --sort=v:refname https://github.com/pikvm/ustreamer.git | grep -v '\^{}' | tail -1 | sed 's/.*refs\/tags\///')
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Latest ustreamer tag: $LATEST_TAG"
+
+    - name: Clone ustreamer repository
+      run: |
+        git clone --depth 1 --branch ${{ steps.get_tag.outputs.tag }} https://github.com/pikvm/ustreamer.git ustreamer
+
+    - name: Update debian changelog with latest version
+      run: |
+        VERSION=$(echo "${{ steps.get_tag.outputs.tag }}" | sed 's/^v//')
+        cd packaging/debian
+        sed -i "s/mainsail-ustreamer (.*)/mainsail-ustreamer ($VERSION-1)/" changelog
+        cat changelog
+
+    - name: Copy debian folder to ustreamer
+      run: |
+        cp -r packaging/debian ustreamer/
+
+    - name: Create output directory
+      run: |
+        mkdir -p output
+
+    - name: Build Debian package in Docker
+      run: |
+        # Set architecture-specific variables
+        case "${{ matrix.arch }}" in
+          amd64)
+            DOCKER_PLATFORM="linux/amd64"
+            DEB_ARCH="amd64"
+            ;;
+          armhf)
+            DOCKER_PLATFORM="linux/arm/v7"
+            DEB_ARCH="armhf"
+            ;;
+          arm64)
+            DOCKER_PLATFORM="linux/arm64"
+            DEB_ARCH="arm64"
+            ;;
+        esac
+
+        docker run --rm --platform=$DOCKER_PLATFORM \
+          -v $(pwd)/ustreamer:/src \
+          -v $(pwd)/output:/output \
+          -w /src \
+          debian:${{ matrix.debian_version }} \
+          bash -c "
+            apt-get update && \
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              debhelper \
+              libevent-dev \
+              libjpeg62-turbo-dev \
+              libbsd-dev \
+              libgpiod-dev \
+              libsystemd-dev \
+              pkg-config \
+              gcc \
+              make \
+              dpkg-dev \
+              fakeroot \
+              build-essential && \
+            dpkg-buildpackage -us -uc -b && \
+            mv ../*.deb /output/ || true && \
+            mv ../*.buildinfo /output/ || true && \
+            mv ../*.changes /output/ || true
+          "
+
+    - name: List generated packages
+      run: |
+        ls -lh output/
+
+    - name: Upload Debian package
+      uses: actions/upload-artifact@v4
+      with:
+        name: mainsail-ustreamer-${{ matrix.debian_version }}-${{ matrix.arch }}
+        path: "output/*.deb"
+        if-no-files-found: error

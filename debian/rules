@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -Wall -pedantic
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+# Build with GPIO and systemd support
+BUILD_OPTIONS = WITH_GPIO=1 WITH_SYSTEMD=1
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	dh_auto_build -- $(BUILD_OPTIONS)
+
+override_dh_auto_install:
+	dh_auto_install -- $(BUILD_OPTIONS) PREFIX=/usr DESTDIR=$(CURDIR)/debian/mainsail-ustreamer
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -f ustreamer ustreamer-* *.so
