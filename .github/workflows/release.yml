@@ -55,9 +55,11 @@ jobs:
 
           Download the appropriate `.deb` file for your system and install with:
           ```bash
-          sudo dpkg -i mainsail-ustreamer_${{ steps.get_tag.outputs.version }}-1_<arch>.deb
+          sudo dpkg -i mainsail-ustreamer_${{ steps.get_tag.outputs.version }}.<debian_release>_<arch>.deb
           sudo apt-get install -f  # Install dependencies if needed
           ```
+
+          Replace `<debian_release>` with your Debian version (bullseye, bookworm, or trixie) and `<arch>` with your architecture (amd64, armhf, or arm64).
 
           ## Upstream
 
