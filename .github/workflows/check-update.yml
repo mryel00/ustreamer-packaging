@@ -19,6 +19,7 @@ jobs:
           echo "latest_tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
           LOCAL_TAG=$(gh release view -R mryel00/ustreamer-packaging --json tagName -q .tagName)
           echo "local_tag=${LOCAL_TAG}" >> $GITHUB_OUTPUT
+
   update-package:
     needs: check-latest
     if: needs.check-latest.outputs.ustreamer_tag != needs.check-latest.outputs.packaged_tag
